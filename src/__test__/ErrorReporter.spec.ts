@@ -1,4 +1,5 @@
 import ErrorReporter from "../ErrorReporter";
+import DBTester from './DBTester';
 
 // function getLastError() {
 //     return {};
@@ -17,25 +18,28 @@ const testConfig = {
 };
 
 let errorReporter = null;
+let dbTester = null;
 
 beforeEach(async () => {
     errorReporter = await ErrorReporter.getInstance(testConfig);
+    dbTester = await DBTester.getInstance(testConfig);
 });
 
 afterEach(() => {
     errorReporter.close();
+    dbTester.close();
 });
 
 test('intialize test', () => {
     expect(errorReporter.isInitialize()).toBe(true);
 });
 
-// test('saveError', () => {
-//     const error = {};
-//     errorReporter.saveError({});
-//     const errorByDb = getLastError();
-//     expect(error).toEqual(errorByDb);
-// });
+test('saveError', () => {
+    const error = {};
+    errorReporter.saveError({});
+    const errorByDb = dbTester.getLastOne();
+    expect(error).toEqual(errorByDb);
+});
 
 // import * as Sequelize from 'sequelize';
 // import * as iconv from 'iconv-lite';
