@@ -1,0 +1,4 @@
+node_modules
+.envrc
+package-lock.json
+.idea
