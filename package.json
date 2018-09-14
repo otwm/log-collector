@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --watch"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +19,7 @@
     "@types/jest": "^23.3.2",
     "@types/sequelize": "^4.27.25",
     "jest": "^23.6.0",
+    "ts-jest": "^23.1.4",
     "tslint": "^5.11.0"
   }
 }
