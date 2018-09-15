@@ -1,36 +1,12 @@
 import * as Sequelize from 'sequelize';
 import * as iconv from 'iconv-lite';
 import * as encodings from 'iconv-lite/encodings';
+import { Config } from '../ErrorReporter';
+
 // @ts-ignore
 iconv.encodings = encodings;
 
 const { log, error: logError } = console;
-
-interface DBPoolProperties{
-    max: number;
-    min: number;
-    acquire: number;
-    idle: number;
-}
-
-interface DBProperties {
-    host:string;
-    dialect?:string;
-    database?:string;
-    username:string;
-    password:string;
-    port?: number;
-    pool?: DBPoolProperties;
-}
-
-interface SlackProperties {
-    url: string;
-}
-
-interface Config {
-    dbProperties: DBProperties;
-    slackProperties: SlackProperties;
-}
 
 class DBTester {
     private static instance = null;

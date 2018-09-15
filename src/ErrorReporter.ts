@@ -6,14 +6,37 @@ iconv.encodings = encodings;
 
 const { log, error: logError } = console;
 
-interface DBPoolProperties{
+export interface Error {
+    type: string;
+    name: string;
+    message: string;
+    code: string;
+    errno: string;
+    syscall: string;
+    hostname: string;
+    status: number;
+    statusText: string;
+    reqInfo: RequestInfo;
+    date: string;
+}
+
+export interface RequestInfo {
+    url: string;
+    query: string;
+    body: string;
+    method: string;
+    status: number;
+    responseData: string;
+}
+
+export interface DBPoolProperties{
     max: number;
     min: number;
     acquire: number;
     idle: number;
 }
 
-interface DBProperties {
+export interface DBProperties {
     host:string;
     dialect?:string;
     database?:string;
@@ -23,11 +46,11 @@ interface DBProperties {
     pool?: DBPoolProperties;
 }
 
-interface SlackProperties {
+export interface SlackProperties {
     url: string;
 }
 
-interface Config {
+export interface Config {
     dbProperties: DBProperties;
     slackProperties: SlackProperties;
 }
@@ -71,7 +94,7 @@ class ErrorReporter {
         return ErrorReporter.instance !== null;
     }
 
-    saveError( error ){
+    saveError( error: Error ){
         console.log(error);
     }
 
