@@ -1,9 +1,6 @@
 import ErrorReporter from "../ErrorReporter";
 import DBTester from './DBTester';
-
-// function getLastError() {
-//     return {};
-// }
+// import initTable from "../utils/initTable";
 
 const testConfig = {
     dbProperties:{
@@ -13,8 +10,14 @@ const testConfig = {
         password: 'mypassword',
     },
     slackProperties: {
-        url: 'https://hooks.slack.com/services/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',
+        url: 'https://hooks.slack.com/services/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',
     }
+};
+
+const error = {
+    type: 'server-error',
+    name: 'some error',
+    status: 500,
 };
 
 let errorReporter = null;
@@ -30,18 +33,54 @@ afterEach(() => {
     dbTester.close();
 });
 
+/**
+ * 초기화 테스트
+ */
 test('intialize test', () => {
     expect(errorReporter.isInitialize()).toBe(true);
 });
 
-test('saveError', () => {
-    const error = {};
-    errorReporter.saveError({});
-    const errorByDb = dbTester.getLastOne();
-    expect(error).toEqual(errorByDb);
+// test('init table', async () => {
+//     await initTable(testConfig);
+// });
+
+/**
+ * 저장 테스트
+ */
+test('saveError', async () => {
+    const before = await dbTester.getCount();
+    await errorReporter.saveError(error);
+    const after = await dbTester.getCount();
+    expect((before + 1)).toBe(after);
+
+    const errorByDb = await dbTester.getLastOne();
+    const result = {
+        type: errorByDb.get("type"),
+        name: errorByDb.get("name"),
+        status: errorByDb.get("status"),
+    };
+    expect(error).toEqual(result);
 });
 
-// import * as Sequelize from 'sequelize';
-// import * as iconv from 'iconv-lite';
-// import encodings from 'iconv-lite/encodings';
-// iconv.en = encodings;
+/**
+ * 슬랙 테스트
+ */
+test('slack test', async () => {
+    const result = await errorReporter.noticeSlack(error);
+    expect(result).toBe(true);
+});
+
+test('error report', async () => {
+    const before = await dbTester.getCount();
+    await errorReporter.procesError(error);
+    const after = await dbTester.getCount();
+    expect((before + 1)).toBe(after);
+
+    const errorByDb = await dbTester.getLastOne();
+    const result = {
+        type: errorByDb.get("type"),
+        name: errorByDb.get("name"),
+        status: errorByDb.get("status"),
+    };
+    expect(error).toEqual(result);
+});

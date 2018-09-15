@@ -5,8 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --watch",
+    "testb": "node --inspect-brk --inspect ./node_modules/.bin/jest -i  --watch",
     "lint": "tslint --project .",
-    "fix": "tslint --fix --project ."
+    "fix": "tslint --fix --project .",
+    "initTable": ""
   },
   "keywords": [],
   "author": "",

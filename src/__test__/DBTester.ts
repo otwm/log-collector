@@ -1,7 +1,8 @@
-import * as Sequelize from 'sequelize';
 import * as iconv from 'iconv-lite';
 import * as encodings from 'iconv-lite/encodings';
 import { Config } from '../ErrorReporter';
+import getErrorReport from "../domain/ErrorReport";
+import getDBInstance from "../utils/getDBInstance";
 
 // @ts-ignore
 iconv.encodings = encodings;
@@ -17,26 +18,9 @@ class DBTester {
 
     static async getInstance(config: Config) {
         if ( DBTester.instance === null ) {
-            try {
-                const { host, database = 'innodb', dialect = 'mysql', username, password , port = 3306, pool = {
-                    max: 10,
-                    min: 1,
-                    acquire: 30000,
-                    idle: 10000,
-                }} = config.dbProperties;
-                this.sequelize = new Sequelize( database, username, password, {
-                    host,
-                    dialect,
-                    port,
-                    pool,
-                    operatorsAliases: false,
-                });
-                await this.sequelize.authenticate();
-                log('connected');
-                DBTester.instance = new this();
-            } catch(error) {
-                logError(error);
-            }
+            this.sequelize = await getDBInstance(config);
+            DBTester.instance = new this();
+            log('initialized');
         }
         return DBTester.instance;
     }
@@ -45,7 +29,34 @@ class DBTester {
         return DBTester.instance !== null;
     }
 
-    getLastOne(){
+    async getLastOne(){
+        try {
+            const { sequelize } = DBTester;
+            const ErrorReport = getErrorReport(sequelize);
+            const lastOne = await ErrorReport.findOne({
+                limit: 1,
+                order: [
+                    ['id', 'DESC'],
+                ],
+            });
+            return lastOne;
+        } catch( err ) {
+            logError( err );
+        }
+        return {};
+    }
+
+    async getCount(){
+        try {
+            const { sequelize } = DBTester;
+            const ErrorReport = getErrorReport(sequelize);
+            const count = await ErrorReport.findOne({
+                attributes: [[ sequelize.fn('COUNT', '*'), 'count' ]],
+            });
+            return count.get("count");
+        } catch( err ) {
+            logError( err );
+        }
         return {};
     }
 

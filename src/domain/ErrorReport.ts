@@ -1,0 +1,59 @@
+import * as Sequelize from "sequelize";
+// import {ErrorInfo} from "../ErrorReporter";
+// import {DefineOptions} from "sequelize";
+
+// TODO: field length check
+function getErrorReport(sequelize, tableName = 'error_report') {
+    return sequelize.define(tableName, {
+        id: {
+            primaryKey: true, type: Sequelize.BIGINT,
+            autoIncrement: true,
+        },
+        type: {
+            type: Sequelize.STRING(25),
+            field: 'error_type',
+            defaultValue: 'server_error',
+        },
+        name: Sequelize.STRING(25),
+        message: Sequelize.STRING(50),
+        code: Sequelize.STRING(50),
+        errno: Sequelize.STRING(50),
+        syscall: Sequelize.STRING(50),
+        hostname: Sequelize.STRING(50),
+        status: Sequelize.INTEGER(3).UNSIGNED,
+        statusText: {
+            type: Sequelize.STRING(25),
+            field: 'status_text',
+        },
+        reqUrl: {
+            type: Sequelize.STRING(300),
+            field: 'req_url',
+        },
+        reqQuery: {
+            type: Sequelize.STRING(300),
+            field: 'req_query',
+        },
+        reqBody: {
+            type: Sequelize.STRING(300),
+            field: 'req_body',
+        },
+        reqMethod: {
+            type: Sequelize.STRING(6),
+            field: 'req_method',
+        },
+        reqStatus: {
+            type: Sequelize.INTEGER(3).UNSIGNED,
+            field: 'req_status',
+        },
+        reqResponseData: {
+            type: Sequelize.STRING(300),
+            field: 'req_res_data',
+        },
+    },{
+        timestamps: true,
+        createdAt: 'createTimestamp',
+        updatedAt: false,
+    });
+}
+
+export default getErrorReport;

@@ -1,32 +1,33 @@
 import * as Sequelize from 'sequelize';
+import axios from 'axios';
 import * as iconv from 'iconv-lite';
 import * as encodings from 'iconv-lite/encodings';
+import getErrorReport from "./domain/ErrorReport";
 // @ts-ignore
 iconv.encodings = encodings;
 
 const { log, error: logError } = console;
 
-export interface Error {
+export interface ErrorInfo {
     type: string;
-    name: string;
-    message: string;
-    code: string;
-    errno: string;
-    syscall: string;
-    hostname: string;
+    name?: string;
+    message?: string;
+    code?: string;
+    errno?: string;
+    syscall?: string;
+    hostname?: string;
     status: number;
-    statusText: string;
-    reqInfo: RequestInfo;
-    date: string;
+    statusText?: string;
+    reqInfo?: RequestInfo;
 }
 
 export interface RequestInfo {
     url: string;
-    query: string;
-    body: string;
+    query?: string;
+    body?: string;
     method: string;
     status: number;
-    responseData: string;
+    responseData?: string;
 }
 
 export interface DBPoolProperties{
@@ -59,6 +60,7 @@ class ErrorReporter {
     private static instance = null;
     private static sequelize;
     private static slackProperties: SlackProperties;
+    private static errorReport: any;
 
     private constructor() {
     }
@@ -81,7 +83,12 @@ class ErrorReporter {
                 });
                 await this.sequelize.authenticate();
                 log('connected');
+                this.sequelize.transaction({
+                    autocommit: true,
+                });
                 ErrorReporter.slackProperties = config.slackProperties;
+                this.errorReport = getErrorReport(this.sequelize);
+
                 ErrorReporter.instance = new this();
             } catch(error) {
                 logError(error);
@@ -94,22 +101,43 @@ class ErrorReporter {
         return ErrorReporter.instance !== null;
     }
 
-    saveError( error: Error ){
-        console.log(error);
+    saveError( error: ErrorInfo ){
+        return ErrorReporter.errorReport.create(error);
     }
 
-    noticeSlack( error ) {
-        console.log(error);
-        log(ErrorReporter.slackProperties);
+    async noticeSlack( error: ErrorInfo ) {
+        // TODO : slack format
+        const message = {
+          text: `\`\`\` ${JSON.stringify(error, null, 1)} \`\`\``,
+        };
+        try {
+            const result = await axios({
+                url: ErrorReporter.slackProperties.url,
+                method: 'POST',
+                data: message,
+                headers: {
+                    'Content-type': 'application/json',
+                },
+            });
+            if (result.statusText !== 'OK') {
+                throw new Error('slack fail');
+            }
+            log( `slack : ${JSON.stringify(result)}`);
+            return true;
+        } catch( err ) {
+            logError(err);
+        }
+        return false;
     }
 
-    procesError( error ) {
-        this.saveError(error);
-        this.procesError(error);
+    async procesError( error ) {
+        await this.saveError(error);
+        await this.noticeSlack(error);
     }
 
     close(){
-
+        ErrorReporter.sequelize.close();
+        ErrorReporter.instance = null;
     }
 }
 
