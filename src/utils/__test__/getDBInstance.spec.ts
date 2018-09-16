@@ -1,6 +1,8 @@
 import getDBInstance from "../getDBInstance";
 
 const testConfig = {
+    slackOn: true,
+    dbOn: true,
     dbProperties:{
         host: 'test.c6uzujan23zf.ap-northeast-2.rds.amazonaws.com',
         dialect: 'mysql',

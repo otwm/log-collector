@@ -49,10 +49,24 @@ function getErrorReport(sequelize, tableName = 'error_report') {
             type: Sequelize.STRING(300),
             field: 'req_res_data',
         },
+        userId: {
+            type: Sequelize.STRING(25),
+            field: 'user_id',
+        },
+        userName: {
+            type: Sequelize.STRING(100),
+            field: 'user_name',
+        },
+        userDepartment: {
+            type: Sequelize.STRING(100),
+            field: 'user_department',
+        },
     },{
         timestamps: true,
         createdAt: 'createTimestamp',
         updatedAt: false,
+        charset: 'utf8',
+        collate: 'utf8_unicode_ci',
     });
 }
 

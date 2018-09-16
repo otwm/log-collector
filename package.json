@@ -1,22 +1,37 @@
 {
-  "name": "log-collector",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "error-catch-notice",
+  "version": "0.1.7",
+  "description": "error log save",
+  "main": "lib/log-collector/src/index.js",
   "scripts": {
     "test": "jest --watch",
     "testb": "node --inspect-brk --inspect ./node_modules/.bin/jest -i  --watch",
     "lint": "tslint --project .",
     "fix": "tslint --fix --project .",
-    "initTable": ""
+    "clean": "rimraf ./lib/log-collector",
+    "build": "npm run clean && mkdir -p ./lib/log-collector && tsc --project .",
+    "prepublish": "npm run build"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "engines": {
+    "node": ">= 8.11.0"
+  },
+  "author": {
+    "name": "otwm",
+    "email": "otwmoo@gmail.com",
+    "url": "https://github.com/otwm"
+  },
+  "license": [
+    {
+      "type": "apache2",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+    }
+  ],
   "dependencies": {
     "axios": "^0.18.0",
     "moment": "^2.22.2",
     "mysql2": "^1.6.1",
+    "ramda": "^0.25.0",
     "sequelize": "^4.38.1",
     "typescript": "^3.0.3",
     "typings": "^2.1.1"
@@ -27,6 +42,7 @@
     "@types/moment": "^2.13.0",
     "@types/sequelize": "^4.27.25",
     "jest": "^23.6.0",
+    "rimraf": "^2.6.2",
     "ts-jest": "^23.1.4",
     "tslint": "^5.11.0",
     "tslint-config-airbnb": "^5.11.0",

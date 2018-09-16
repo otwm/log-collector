@@ -1,8 +1,8 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
+    "target": "es5",
+    "module": "commonjs",
     "jsx": "preserve",
     "allowJs": true,
     "moduleResolution": "node",
@@ -14,14 +14,11 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "baseUrl": "./src",
+    "outDir": "./lib/log-collector",
     "typeRoots": [
-      "./node_modules/@types"
+      "./node_modules/@types", "src/typings"
     ],
-    "lib": [
-      "dom",
-      "es2015",
-      "es2016"
-    ]
+    "lib": ["dom", "es5", "es6", "es2017.object", "es2017"]
   },
   "exclude": [
     "node_modules"
