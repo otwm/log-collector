@@ -81,13 +81,16 @@ class ErrorReporter {
     static async getInstance(config: Config) {
         ErrorReporter.dbOn = config.dbOn;
         ErrorReporter.slackOn = config.slackOn;
+        // TODO: 리밋
+        // TODO: 리커넥션
+        // TODO: 설정 custom
         if ( config.dbOn && ErrorReporter.instance === null ) {
             try {
                 const { host, database = 'innodb', dialect = 'mysql', username, password , port = 3306, pool = {
                     max: 10,
                     min: 1,
-                    acquire: 30000,
-                    idle: 10000,
+                    acquire: 20000,
+                    idle: 20000,
                 }} = config.dbProperties;
                 this.sequelize = new Sequelize( database, username, password, {
                     host,
@@ -131,6 +134,7 @@ class ErrorReporter {
             return;
         }
         const stringify1 = value => JSON.stringify(value, null, 1);
+        // TODO: error 객체 처리
         const {
             type, name, message, code, errno, syscall, hostname, status, statusText,
         } = error;
@@ -173,6 +177,7 @@ class ErrorReporter {
     }
 
     async procesError( error ) {
+        // TODO: DB 실패시 슬랙으로
         try {
             await this.saveError(error);
         } catch(err) {
