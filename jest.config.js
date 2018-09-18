@@ -6,6 +6,7 @@ module.exports = {
         "^.+\\.tsx?$": "ts-jest"
     },
     "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$",
+    "testPathIgnorePatterns": ["initTable.spec.ts"],
     "moduleFileExtensions": [
         "ts",
         "tsx",
