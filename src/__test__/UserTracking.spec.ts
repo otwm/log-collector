@@ -1,11 +1,6 @@
-// 테이블 크리생성
-// 디비 외부 전달
-// 사용자 오퍼레이션 저장
-
-
-
-import UserTracker from "../UserTracker";
+import UserTracker, {Operation} from "../UserTracker";
 import * as Sequelize from "sequelize";
+import DBTester from "./DBTester";
 
 const dbProperties = {
     host: 'test.c6uzujan23zf.ap-northeast-2.rds.amazonaws.com',
@@ -28,6 +23,19 @@ const dbPropertiesByFull = {
     retry: { max: 2 },
 };
 
+const testConfig = {
+    dbProperties:{
+        host: 'test.c6uzujan23zf.ap-northeast-2.rds.amazonaws.com',
+        dialect: 'mysql',
+        username: 'otwm',
+        password: 'mypassword',
+    },
+    slackProperties: {
+        url: 'https://hooks.slack.com/services/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',
+    },
+    slackOn: true,
+    dbOn: true,
+};
 // const sequelize = null;
 
 const configByDbproperties = {
@@ -39,6 +47,11 @@ const configByDbpropertiesFull = {
     dbProperties: dbPropertiesByFull,
     sequalize: null,
 };
+
+let dbTester = null;
+beforeEach(async () => {
+    dbTester = await DBTester.getInstance(testConfig);
+});
 
 test.skip('initialize db', async () => {
     const userTracker = await UserTracker.getInstance(configByDbproperties);
@@ -59,4 +72,31 @@ test.skip('initialize db - by sequalize', async () => {
     expect(userTracker.isInitialize()).toBe(true);
 
     userTracker.close();
+});
+
+test('save user tracking', async () => {
+    const userTracker = await UserTracker.getInstance(configByDbproperties);
+    console.log(dbTester);
+    const before = await dbTester.getCount4UserTraking();
+    await userTracker.save({
+        displayName: 'test1',
+        actionName: 'action1',
+        operation: Operation.Insert,
+        params: { param1: 'p1', param2: 'p2' },
+    });
+    await userTracker.save({
+        displayName: 'test1',
+        actionName: 'action1',
+        operation: Operation.Delete,
+        params: { param1: 'bb', param2: 'ab' },
+    });
+    await userTracker.save({
+        displayName: 'test1',
+        actionName: 'action1',
+        operation: Operation.Update,
+        params: { param1: 'temp', param2: 'ok' },
+    });
+    const after = await dbTester.getCount4UserTraking();
+    expect((before + 3)).toBe(after);
+
 });

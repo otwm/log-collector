@@ -1,7 +1,8 @@
 import * as Sequelize from 'sequelize';
 import { path } from "ramda";
+import getUserTraking from "./domain/UserTracking";
 
-enum Operation {
+export enum Operation {
     Insert = 1,
     Update,
     Delete,
@@ -9,14 +10,14 @@ enum Operation {
     Merge,
 }
 
-interface ActionInfo {
+export interface ActionInfo {
     displayName?: string,
     actionName: string,
     operation: Operation,
-    params: string,
+    params?: object,
 }
 
-interface UserTrackerConfig {
+export interface UserTrackerConfig {
     dbProperties?: object;
     sequelize?: any; // TODO:
 }
@@ -36,14 +37,15 @@ const defaultOption = {
         collate: 'utf8_general_ci',
         timestamps: true
     },
+    database: 'innodb',
     operatorsAliases: false,
     sync: { force: false },
 };
 
 class UserTracker {
-    private static instance = null;
+    private static instance: UserTracker = null;
     private static sequelize;
-    // private static userTraking: any;
+    private static userTraking: any;
 
     private constructor() {
     }
@@ -54,11 +56,13 @@ class UserTracker {
         if ( sequelize ) {
             UserTracker.sequelize = sequelize;
             UserTracker.instance = new this();
+            UserTracker.userTraking = getUserTraking(this.sequelize);
             return UserTracker.instance;
         }
         if ( dbProperties ) {
             UserTracker.sequelize = new Sequelize(Object.assign({}, defaultOption, dbProperties));
             UserTracker.instance = new this();
+            UserTracker.userTraking = getUserTraking(this.sequelize);
             return UserTracker.instance;
         }
         throw new Error('nothing db props!!!');
@@ -72,11 +76,13 @@ class UserTracker {
         return UserTracker.sequelize;
     }
     save(actionInfo: ActionInfo) {
-        console.log(UserTracker.sequelize, actionInfo);
+        console.log('==================================================');
+        return UserTracker.userTraking.create(actionInfo);
     }
 
     close(){
-
+        if ( UserTracker.sequelize )UserTracker.sequelize.close();
+        UserTracker.instance = null;
     }
 }
 

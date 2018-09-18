@@ -3,6 +3,7 @@ import * as encodings from 'iconv-lite/encodings';
 import { Config } from '../ErrorReporter';
 import getErrorReport from "../domain/ErrorReport";
 import getDBInstance from "../utils/getDBInstance";
+import getUserTraking from "../domain/UserTracking";
 
 // @ts-ignore
 iconv.encodings = encodings;
@@ -50,6 +51,20 @@ class DBTester {
         try {
             const { sequelize } = DBTester;
             const ErrorReport = getErrorReport(sequelize);
+            const count = await ErrorReport.findOne({
+                attributes: [[ sequelize.fn('COUNT', '*'), 'count' ]],
+            });
+            return count.get("count");
+        } catch( err ) {
+            logError( err );
+        }
+        return {};
+    }
+
+    async getCount4UserTraking(){
+        try {
+            const { sequelize } = DBTester;
+            const ErrorReport = getUserTraking(sequelize);
             const count = await ErrorReport.findOne({
                 attributes: [[ sequelize.fn('COUNT', '*'), 'count' ]],
             });
