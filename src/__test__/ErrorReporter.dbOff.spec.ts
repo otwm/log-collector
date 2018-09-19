@@ -38,7 +38,7 @@ afterEach(() => {
 /**
  * 초기화 테스트
  */
-test('intialize test', () => {
+test('dbOff-intialize test', () => {
     expect(errorReporter.isInitialize()).toBe(true);
 });
 
@@ -49,7 +49,7 @@ test('intialize test', () => {
 /**
  * 저장 테스트
  */
-test('saveError', async () => {
+test('dbOff-saveError', async () => {
     const after = await dbTester.getCount();
     console.log(after);
 });
@@ -57,7 +57,7 @@ test('saveError', async () => {
 /**
  * 슬랙 테스트
  */
-test('slack test', async () => {
+test('dbOff-slack test', async () => {
     const result = await errorReporter.noticeSlack(error);
     expect(result).toBe(true);
 });

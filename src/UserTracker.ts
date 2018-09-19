@@ -1,7 +1,13 @@
 import * as Sequelize from 'sequelize';
 import { path } from "ramda";
 import getUserTraking from "./domain/UserTracking";
+import {defaultOption} from "./common/constants";
 
+const { error: logError } = console;
+
+/**
+ * 사용자 오퍼레이션
+ */
 export enum Operation {
     Insert = 1,
     Update,
@@ -10,6 +16,9 @@ export enum Operation {
     Merge,
 }
 
+/**
+ * 액션
+ */
 export interface ActionInfo {
     displayName?: string,
     actionName: string,
@@ -20,50 +29,45 @@ export interface ActionInfo {
 export interface UserTrackerConfig {
     dbProperties?: object;
     sequelize?: any; // TODO:
+    saveReconnect?: boolean;
 }
-
-const defaultOption = {
-    pool: {
-        max: 5,
-        min: 1,
-        acquire: 20000,
-        idle: 20000,
-    },
-    retry: { max: 2 },
-    dialect: 'mysql',
-    port: 3306,
-    define: {
-        charset: 'utf8',
-        collate: 'utf8_general_ci',
-        timestamps: true
-    },
-    database: 'innodb',
-    operatorsAliases: false,
-    sync: { force: false },
-};
 
 class UserTracker {
     private static instance: UserTracker = null;
     private static sequelize;
     private static userTraking: any;
+    private static saveReconnect: boolean;
+    private static config: UserTrackerConfig;
 
     private constructor() {
     }
 
     static async getInstance(config: UserTrackerConfig) {
+        UserTracker.config = config;
+        return await UserTracker.connect();
+    }
+
+    static async connect() {
+        const config = UserTracker.config;
         const sequelize = path(['sequelize'], config);
         const dbProperties = path(['dbProperties'], config);
+        const saveReconnect = path(['saveReconnect'], config) || true;
+        UserTracker.saveReconnect = saveReconnect;
         if ( sequelize ) {
             UserTracker.sequelize = sequelize;
             UserTracker.instance = new this();
-            UserTracker.userTraking = getUserTraking(this.sequelize);
+            UserTracker.userTraking = getUserTraking(UserTracker.sequelize);
             return UserTracker.instance;
         }
         if ( dbProperties ) {
-            UserTracker.sequelize = new Sequelize(Object.assign({}, defaultOption, dbProperties));
-            UserTracker.instance = new this();
-            UserTracker.userTraking = getUserTraking(this.sequelize);
-            return UserTracker.instance;
+            try {
+                UserTracker.sequelize = new Sequelize(Object.assign({}, defaultOption, dbProperties));
+                UserTracker.instance = new this();
+                UserTracker.userTraking = getUserTraking(this.sequelize);
+                return UserTracker.instance;
+            } catch (err) {
+                logError(`connection error: ${err}`);
+            }
         }
         throw new Error('nothing db props!!!');
     }
@@ -72,11 +76,11 @@ class UserTracker {
         return UserTracker.instance !== null;
     }
 
-    getSequelize() {
-        return UserTracker.sequelize;
-    }
-    save(actionInfo: ActionInfo) {
-        console.log('==================================================');
+    async save(actionInfo: ActionInfo) {
+        const { saveReconnect = true } = UserTracker;
+        if ( saveReconnect && !UserTracker.sequelize) {
+            await UserTracker.connect();
+        }
         return UserTracker.userTraking.create(actionInfo);
     }
 

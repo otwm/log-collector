@@ -4,6 +4,7 @@ import { path } from 'ramda';
 import * as iconv from 'iconv-lite';
 import * as encodings from 'iconv-lite/encodings';
 import getErrorReport from "./domain/ErrorReport";
+import {defaultOption} from "./common/constants";
 // @ts-ignore
 iconv.encodings = encodings;
 
@@ -36,23 +37,7 @@ export interface RequestInfo {
     method: string;
     status: number;
     responseData?: string;
-}
-
-export interface DBPoolProperties {
-    max: number;
-    min: number;
-    acquire: number;
-    idle: number;
-}
-
-export interface DBProperties {
-    host:string;
-    dialect?:string;
-    database?:string;
-    username:string;
-    password:string;
-    port?: number;
-    pool?: DBPoolProperties;
+    saveReconnect: boolean;
 }
 
 export interface SlackProperties {
@@ -62,7 +47,8 @@ export interface SlackProperties {
 export interface Config {
     dbOn: boolean;
     slackOn: boolean;
-    dbProperties?: DBProperties;
+    dbProperties?: object;
+    sequelize?: any;
     slackProperties?: SlackProperties;
 }
 
@@ -73,7 +59,8 @@ class ErrorReporter {
     private static errorReport: any;
     private static dbOn: any;
     private static slackOn: any;
-
+    private static saveReconnect: boolean;
+    private static config: Config;
 
     private constructor() {
     }
@@ -81,65 +68,70 @@ class ErrorReporter {
     static async getInstance(config: Config) {
         ErrorReporter.dbOn = config.dbOn;
         ErrorReporter.slackOn = config.slackOn;
-        // TODO: 리밋
-        // TODO: 리커넥션
-        // TODO: 설정 custom
-        if ( config.dbOn && ErrorReporter.instance === null ) {
-            try {
-                const { host, database = 'innodb', dialect = 'mysql', username, password , port = 3306, pool = {
-                    max: 10,
-                    min: 1,
-                    acquire: 20000,
-                    idle: 20000,
-                }} = config.dbProperties;
-                this.sequelize = new Sequelize( database, username, password, {
-                    host,
-                    dialect,
-                    port,
-                    pool,
-                    define: {
-                        charset: 'utf8',
-                        collate: 'utf8_general_ci',
-                        timestamps: true
-                    },
-                    operatorsAliases: false,
-                    retry: { max: 2 },
-                });
-                await this.sequelize.authenticate();
-                log('connected');
-                this.sequelize.transaction({
-                    autocommit: true,
-                });
-                ErrorReporter.slackProperties = config.slackProperties;
-                this.errorReport = getErrorReport(this.sequelize);
-
-                ErrorReporter.instance = new this();
-            } catch(error) {
-                logError(error);
-            }
-        } else {
-            ErrorReporter.slackProperties = config.slackProperties;
-            ErrorReporter.instance = new this();
-            console.log(ErrorReporter.instance)
+        ErrorReporter.config = config;
+        if ( config.dbOn && ErrorReporter.sequelize === null ) {
+            await ErrorReporter.connect();
         }
+        if ( config.slackProperties ){
+            ErrorReporter.slackProperties = config.slackProperties;
+            log('slack props set!');
+        }
+        ErrorReporter.instance = new this();
         return ErrorReporter.instance;
+    }
+
+    static async connect() {
+        const config = ErrorReporter.config;
+        const sequelize = path(['sequelize'], config);
+        const dbProperties = path(['dbProperties'], config);
+        const saveReconnect = path(['saveReconnect'], config) || true;
+        ErrorReporter.saveReconnect = saveReconnect;
+        if ( sequelize ) {
+            ErrorReporter.sequelize = sequelize;
+            ErrorReporter.instance = new this();
+            ErrorReporter.errorReport = getErrorReport(ErrorReporter.sequelize);
+            return ErrorReporter.instance;
+        }
+        if ( dbProperties ) {
+            try {
+                ErrorReporter.sequelize = new Sequelize(Object.assign({}, defaultOption, dbProperties));
+                ErrorReporter.instance = new this();
+                ErrorReporter.errorReport = getErrorReport(this.sequelize);
+                return ErrorReporter.instance;
+            } catch (err) {
+                logError(`connection error: ${err}`);
+            }
+        }
+        throw new Error('nothing db props!!!');
     }
 
     isInitialize() {
         return ErrorReporter.instance !== null;
     }
 
-    saveError( error: ErrorInfo ){
+    async saveError( error: ErrorInfo ){
         if ( !ErrorReporter.dbOn ) {
             return;
         }
+        const { saveReconnect = true } = ErrorReporter;
+        if ( saveReconnect && !ErrorReporter.sequelize) {
+            log('reconnect ...');
+            await ErrorReporter.connect();
+        }
         const stringify1 = value => JSON.stringify(value, null, 1);
-        // TODO: error 객체 처리
-        const {
-            type, name, message, code, errno, syscall, hostname, status, statusText,
-        } = error;
+        const type = path(['type'], error);
+        const name = path(['name'], error);
+        const message = path(['message'], error);
+        const code = path(['code'], error);
+        const errno = path(['errno'], error);
+        const syscall = path(['syscall'], error);
+        const hostname = path(['hostname'], error);
+        const status = path(['status'], error);
+        const statusText = path(['statusText'], error);
+
         const reqInfo = path([ 'reqInfo' ], error) || { url: null, query: null, body: null, method: null };
         const user = path([ 'user' ], error) || { id: null, name: null, department: null };
+
         const { url: reqUrl, query: reqQuery, body: reqBody, method: reqMethod } = reqInfo;
         const { id: userId, name: userName, department: userDepartment } = user;
         const error4DB = {
@@ -177,18 +169,50 @@ class ErrorReporter {
     }
 
     async procesError( error ) {
-        // TODO: DB 실패시 슬랙으로
+        let dbError = null;
         try {
             await this.saveError(error);
         } catch(err) {
             logError(err);
+            dbError = err;
         }
-        try{
+        try {
             await this.noticeSlack(error);
         } catch(err) {
             logError(err);
         }
+        if (dbError !== null) {
+            try {
+                await this.noticeSlack({ ...dbError, errorType: 'db error'});
+            } catch(err) {
+                logError(err);
+            }
+        }
     }
+
+    // async procesError( error ) {
+    //     try {
+    //         this.saveError(error);
+    //     } catch (err) {
+    //
+    //     }
+    //
+    //     try {
+    //         await this.noticeSlack(error);
+    //     } catch(err) {
+    //         logError(err);
+    //     }
+        // return this.saveError(error).then(result => {
+        //     log(result);
+        //     this.noticeSlack(error).then(data => {
+        //         log(data);
+        //     });
+        // }).catch(err => {
+        //     this.noticeSlack({...err, errorType: 'error report fail!!!' }).then(data => {
+        //         log(data);
+        //     });
+        // });
+    // }
 
     close(){
         if ( ErrorReporter.sequelize )ErrorReporter.sequelize.close();

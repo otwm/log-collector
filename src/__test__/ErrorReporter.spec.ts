@@ -1,6 +1,5 @@
 import ErrorReporter from "../ErrorReporter";
 import DBTester from './DBTester';
-// import initTable from "../utils/initTable";
 
 const testConfig = {
     dbProperties:{
@@ -41,10 +40,6 @@ afterEach(() => {
 test('intialize test', () => {
     expect(errorReporter.isInitialize()).toBe(true);
 });
-
-// test('init table', async () => {
-//     await initTable(testConfig);
-// });
 
 /**
  * 저장 테스트

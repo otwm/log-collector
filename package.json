@@ -1,6 +1,6 @@
 {
   "name": "error-catch-notice",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "error log save",
   "main": "lib/log-collector/src/index.js",
   "scripts": {

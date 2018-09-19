@@ -2,6 +2,8 @@ import * as Sequelize from "sequelize";
 import * as iconv from 'iconv-lite';
 import * as encodings from 'iconv-lite/encodings';
 import { Config } from "../ErrorReporter";
+import {defaultOption} from "../common/constants";
+import { path } from "ramda";
 
 // @ts-ignore
 iconv.encodings = encodings;
@@ -9,23 +11,8 @@ iconv.encodings = encodings;
 async function getDBInstance(config: Config) {
     let sequelize;
     try {
-        const {
-            host, database = 'innodb', dialect = 'mysql',
-            username, password, port = 3306,
-            pool = {
-                max: 10,
-                min: 1,
-                acquire: 30000,
-                idle: 10000,
-            }
-        } = config.dbProperties;
-        sequelize = new Sequelize(database, username, password, {
-            host,
-            dialect,
-            port,
-            pool,
-            operatorsAliases: false,
-        });
+        const dbProperties = path(['dbProperties'], config);
+        sequelize = new Sequelize(Object.assign({}, defaultOption, dbProperties));
         await sequelize.authenticate();
         console.log('connected');
         return sequelize;
