@@ -30,6 +30,7 @@ export interface UserTrackerConfig {
     dbProperties?: object;
     sequelize?: any; // TODO:
     saveReconnect?: boolean;
+    tableName?: string;
 }
 
 class UserTracker {
@@ -51,19 +52,20 @@ class UserTracker {
         const config = UserTracker.config;
         const sequelize = path(['sequelize'], config);
         const dbProperties = path(['dbProperties'], config);
+        const tableName = path(['tableName'], config) || 'user_traking';
         const saveReconnect = path(['saveReconnect'], config) || true;
         UserTracker.saveReconnect = saveReconnect;
         if ( sequelize ) {
             UserTracker.sequelize = sequelize;
             UserTracker.instance = new this();
-            UserTracker.userTraking = getUserTraking(UserTracker.sequelize);
+            UserTracker.userTraking = getUserTraking(UserTracker.sequelize, tableName);
             return UserTracker.instance;
         }
         if ( dbProperties ) {
             try {
                 UserTracker.sequelize = new Sequelize(Object.assign({}, defaultOption, dbProperties));
                 UserTracker.instance = new this();
-                UserTracker.userTraking = getUserTraking(this.sequelize);
+                UserTracker.userTraking = getUserTraking(this.sequelize, tableName);
                 return UserTracker.instance;
             } catch (err) {
                 logError(`connection error: ${err}`);
@@ -74,6 +76,10 @@ class UserTracker {
 
     isInitialize() {
         return UserTracker.instance !== null;
+    }
+
+    getSequelize() {
+        return UserTracker.sequelize;
     }
 
     async save(actionInfo: ActionInfo) {

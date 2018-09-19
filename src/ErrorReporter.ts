@@ -50,6 +50,7 @@ export interface Config {
     dbProperties?: object;
     sequelize?: any;
     slackProperties?: SlackProperties;
+    tableName?: string;
 }
 
 class ErrorReporter {
@@ -84,13 +85,14 @@ class ErrorReporter {
         const config = ErrorReporter.config;
         const sequelize = path(['sequelize'], config);
         const dbProperties = path(['dbProperties'], config);
+        const tableName = path(['tableName'], config) || 'error_report';
         const saveReconnect = path(['saveReconnect'], config) || true;
         ErrorReporter.saveReconnect = saveReconnect;
         // TODO: 시퀄라이즈가 끈어지거나 비정상 적이면 어떻게 해야 할까?
         if ( sequelize ) {
             ErrorReporter.sequelize = sequelize;
             ErrorReporter.instance = new this();
-            ErrorReporter.errorReport = getErrorReport(ErrorReporter.sequelize);
+            ErrorReporter.errorReport = getErrorReport(ErrorReporter.sequelize, tableName);
             log('sequelize set!');
             return ErrorReporter.instance;
         }
@@ -98,7 +100,7 @@ class ErrorReporter {
             try {
                 ErrorReporter.sequelize = new Sequelize(Object.assign({}, defaultOption, dbProperties));
                 ErrorReporter.instance = new this();
-                ErrorReporter.errorReport = getErrorReport(this.sequelize);
+                ErrorReporter.errorReport = getErrorReport(this.sequelize, tableName);
                 log('connected!');
                 return ErrorReporter.instance;
             } catch (err) {
@@ -143,6 +145,10 @@ class ErrorReporter {
             reqQuery: stringify1(reqQuery), reqBody: stringify1(reqBody),
         };
         return ErrorReporter.errorReport.create(error4DB);
+    }
+
+    getSequalize() {
+        return ErrorReporter.sequelize;
     }
 
     async noticeSlack( error: ErrorInfo ) {
