@@ -86,10 +86,12 @@ class ErrorReporter {
         const dbProperties = path(['dbProperties'], config);
         const saveReconnect = path(['saveReconnect'], config) || true;
         ErrorReporter.saveReconnect = saveReconnect;
+        // TODO: 시퀄라이즈가 끈어지거나 비정상 적이면 어떻게 해야 할까?
         if ( sequelize ) {
             ErrorReporter.sequelize = sequelize;
             ErrorReporter.instance = new this();
             ErrorReporter.errorReport = getErrorReport(ErrorReporter.sequelize);
+            log('sequelize set!');
             return ErrorReporter.instance;
         }
         if ( dbProperties ) {
@@ -97,6 +99,7 @@ class ErrorReporter {
                 ErrorReporter.sequelize = new Sequelize(Object.assign({}, defaultOption, dbProperties));
                 ErrorReporter.instance = new this();
                 ErrorReporter.errorReport = getErrorReport(this.sequelize);
+                log('connected!');
                 return ErrorReporter.instance;
             } catch (err) {
                 logError(`connection error: ${err}`);
